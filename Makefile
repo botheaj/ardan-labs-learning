@@ -22,8 +22,7 @@ build:
 	cd service && go build -ldflags "-X main.build=local"
 
 tidy:
-	go mod tidy
-	go mod vendor
+	cd service && go mod tidy && go mod vendor
 
 VERSION := 1.0
 

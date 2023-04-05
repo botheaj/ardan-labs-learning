@@ -5,6 +5,7 @@ venv/
 config.yaml
 example-lightspeed
 .node_modules/
+vendor
 
 # Local credentials
 **/.credentials/*
