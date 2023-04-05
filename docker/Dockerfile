@@ -4,6 +4,7 @@ ARG BUILD_REF
 
 COPY ../service/main.go /service/
 COPY ../service/go.mod /service/
+COPY ../service/go.sum /service/
 
 WORKDIR /service
 RUN go build -ldflags "-X main.build=${BUILD_REF}"
