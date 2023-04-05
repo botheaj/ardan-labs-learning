@@ -7,8 +7,6 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-
-	"go.uber.org/automaxprocs"
 )
 
 var build = "develop"
@@ -21,7 +19,6 @@ func main() {
 	}
 
 	g := runtime.GOMAXPROCS(0)
-	automaxprocs.New()
 	log.Printf("starting service build[%s] CPU[%d]", build, g)
 	defer log.Println("service ended")
 
