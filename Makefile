@@ -21,6 +21,10 @@ run:
 build:
 	cd service && go build -ldflags "-X main.build=local"
 
+tidy:
+	go mod tidy
+	go mod vendor
+
 VERSION := 1.0
 
 all: build-docker
@@ -51,7 +55,8 @@ kind-status:
 	kubectl get pods -o wide --watch --all-namespaces
 
 kind-apply:
-	kubectl apply -f kubernetes/base/service-pod/base-service.yaml --namespace service-system
+	kustomize build kubernetes/kind/service-pod | kubectl apply -f -
+#	kubectl apply -f kubernetes/base/service-pod/base-service.yaml --namespace service-system
 
 kind-restart:
 	kubectl rollout restart deployment service-pod --namespace service-system
@@ -60,6 +65,8 @@ kind-logs:
 	kubectl logs -l app=service --all-containers=true -f --tail=100 --namespace service-system
 
 kind-update: all kind-load kind-restart
+
+kind-update-apply: all kind-load kind-apply
 
 kind-argo-install:
 	kubectl create ns argocd
