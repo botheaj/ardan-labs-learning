@@ -11,7 +11,5 @@ RUN go build -ldflags "-X main.build=${BUILD_REF}"
 FROM alpine:3.14
 ARG BUILD_DATE
 ARG BUILD_REF
-COPY --from=build_sales-api /service /service-video
-WORKDIR /service 
+COPY --from=build_sales-api /service/service /service
 CMD ["./service"] 
-
