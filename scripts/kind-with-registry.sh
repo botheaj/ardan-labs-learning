@@ -11,7 +11,7 @@ set -o errexit
 # fi
 
 # create a cluster with the local registry enabled in containerd
-kind create cluster --config=kubernetes/kind/kind-config.yaml
+kind create cluster --name $1 --config=kubernetes/kind/kind-config.yaml
 # -
 # kind: Cluster
 # apiVersion: kind.x-k8s.io/v1alpha4
@@ -59,6 +59,8 @@ kind create cluster --config=kubernetes/kind/kind-config.yaml
 # # kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.9/config/manifests/metallb-native.yaml
 # # kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
 # kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+kubectl create ns argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 # # istioctl install --set profile=demo -y
 
 # ### update providers registry 
