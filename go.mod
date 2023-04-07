@@ -1,4 +1,4 @@
-module github.com/otheaj/ardan-labs-learning/service
+module github.com/botheaj/ardan-labs-learning/service
 
 go 1.19
 
