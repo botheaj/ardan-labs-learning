@@ -15,23 +15,22 @@ cluster:
 	./scripts/kind-with-registry.sh
 
 run:
-	cd service
-	go run service/main.go
+	go run app/services/sales-api/main.go | go run app/tooling/logfmt/main.go
 
 build:
-	cd service && go build -ldflags "-X main.build=local"
+	cd app/services/sales-api  && go build -ldflags "-X main.build=local"
 
 tidy:
-	cd service && go mod tidy && go mod vendor
+	cd app/services/sales-api  && go mod tidy && go mod vendor
 
-VERSION := 1.0
+VERSION := 1.1
 
-all: build-docker
+all: sales-api
 
-build-docker:
+sales-api:
 	docker build \
-	-f docker/Dockerfile \
-	-t service-arm64:$(VERSION) \
+	-f docker/Dockerfile.sales-api \
+	-t sales-api-arm64:$(VERSION) \
 	--build-arg BUILD_REF=$(VERSION) \
 	--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 	.
@@ -45,7 +44,8 @@ kind-down:
 	kind delete cluster --name $(KIND_CLUSTER)
 
 kind-load:
-	kind load docker-image service-arm64:$(VERSION) --name $(KIND_CLUSTER)
+	cd kubernetes/kind/sales-pod; kustomize edit set image sales-api-image=sales-api-arm64:$(VERSION)
+	kind load docker-image sales-api-arm64:$(VERSION) --name $(KIND_CLUSTER)
 
 kind-status:
 	kubectx kind-kind
@@ -54,14 +54,14 @@ kind-status:
 	kubectl get pods -o wide --watch --all-namespaces
 
 kind-apply:
-	kustomize build kubernetes/kind/service-pod | kubectl apply -f -
-#	kubectl apply -f kubernetes/base/service-pod/base-service.yaml --namespace service-system
+	kustomize build kubernetes/kind/sales-pod | kubectl apply -f -
+#	kubectl apply -f kubernetes/base/sales-pod/base-sales.yaml --namespace sales-system
 
 kind-restart:
-	kubectl rollout restart deployment service-pod --namespace service-system
+	kubectl rollout restart deployment sales-pod --namespace sales-system
 
 kind-logs:
-	kubectl logs -l app=service --all-containers=true -f --tail=100 --namespace service-system
+	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace sales-system | go run app/tooling/logfmt/main.go
 
 kind-update: all kind-load kind-restart
 

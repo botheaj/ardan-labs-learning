@@ -9,7 +9,7 @@ spec:
   source:
     repoURL: https://github.com/botheaj/ardan-labs-learning
     targetRevision: module3
-    path: kubernetes/base/service-pod/base-service.yaml
+    path: kubernetes/base/sales-pod/base-sales.yaml
 
   destination:
     server: https://kubernetes.default.svc #on the same cluster, so we can use the internal address
