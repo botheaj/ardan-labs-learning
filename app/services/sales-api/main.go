@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/botheaj/service4/foundation/logger"
 	"go.uber.org/zap"
@@ -24,5 +25,6 @@ func main() {
 }
 
 func run(log *zap.SugaredLogger) error {
+	log.Infow("startup", "GOMAXPROCS", runtime.GOMAXPROCS(0))
 	return nil
 }
