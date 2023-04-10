@@ -18,13 +18,14 @@ cluster:
 	./scripts/kind-with-registry.sh
 
 run:
-	go run app/services/sales-api/main.go | go run app/tooling/logfmt/main.go
+	go run app/services/sales-api/main.go 
+# | go run app/tooling/logfmt/main.go
 
 build:
 	cd app/services/sales-api  && go build -ldflags "-X main.build=local"
 
 tidy:
-	cd app/services/sales-api  && go mod tidy && go mod vendor
+	go mod tidy && go mod vendor
 
 VERSION := 1.1
 
@@ -78,3 +79,5 @@ kind-argo-port-forward:
 	kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d | pbcopy	
 	kubectl port-forward -n argocd service/argocd-server 8443:443	
 
+tf-apply:
+	cd infrastructure/terraform && terraform apply
