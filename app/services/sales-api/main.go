@@ -3,11 +3,16 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 
 	"github.com/botheaj/service4/foundation/logger"
+	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 )
+
+var build = "develop"
 
 func main() {
 	log, err := logger.New("SALES-API")
@@ -25,6 +30,20 @@ func main() {
 }
 
 func run(log *zap.SugaredLogger) error {
+
+	// =========================================================================
+	// GOMAXPROCS
+
+	opt := maxprocs.Logger(log.Infof)
+	if _, err := maxprocs.Set(opt); err != nil {
+		return fmt.Errorf("maxprocs: %w", err)
+	}
 	log.Infow("startup", "GOMAXPROCS", runtime.GOMAXPROCS(0))
+
+	defer log.Infow("shutdown")
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+	<-shutdown
+
 	return nil
 }

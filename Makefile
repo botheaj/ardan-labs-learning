@@ -25,47 +25,63 @@ build:
 	cd app/services/sales-api  && go build -ldflags "-X main.build=local"
 
 tidy:
-	go mod tidy && go mod vendor
+	go mod tidy && go mod vendor 
 
-VERSION := 1.1
+VERSION := 1.0
 
 all: sales-api
 
 sales-api:
 	docker build \
-	-f docker/Dockerfile.sales-api \
-	-t sales-api-arm64:$(VERSION) \
+	-f infrastructure/docker/Dockerfile.sales-api \
+	-t sales-api:$(VERSION) \
 	--build-arg BUILD_REF=$(VERSION) \
 	--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 	.
 
 KIND_CLUSTER := kind
 
-kind-up:
-	./scripts/kind-with-registry.sh $(KIND_CLUSTER)	
+dev-up:
+	kind create cluster \
+		--image kindest/node:v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1 \
+		--name $(KIND_CLUSTER) \
+		--config infrastructure/k8s/dev/kind-config.yaml
+	kubectl wait --timeout=120s --namespace=local-path-storage --for=condition=Available deployment/local-path-provisioner
 
-kind-down:
+# kind-up:
+# 	./scripts/kind-with-registry.sh $(KIND_CLUSTER)	
+
+dev-down:
 	kind delete cluster --name $(KIND_CLUSTER)
 
-kind-load:
-	cd kubernetes/kind/sales-pod; kustomize edit set image sales-api-image=sales-api-arm64:$(VERSION)
-	kind load docker-image sales-api-arm64:$(VERSION) --name $(KIND_CLUSTER)
+dev-load:
+	kind load docker-image sales-api:$(VERSION) --name $(KIND_CLUSTER)
 
-kind-status:
+dev-status:
 	kubectx kind-kind
 	kubectl get nodes -o wide
 	kubectl get svc -o wide
 	kubectl get pods -o wide --watch --all-namespaces
 
-kind-apply:
-	kustomize build kubernetes/kind/sales-pod | kubectl apply -f -
-#	kubectl apply -f kubernetes/base/sales-pod/base-sales.yaml --namespace sales-system
+dev-apply:
+	kustomize build infrastructure/k8s/dev/sales | kubectl apply -f -
+	kubectl wait --timeout=120s --namespace=sales-system --for=condition=Available deployment/sales
 
-kind-restart:
-	kubectl rollout restart deployment sales-pod --namespace sales-system
+dev-restart:
+	kubectl rollout restart deployment sales --namespace sales-system
 
-kind-logs:
-	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace sales-system | go run app/tooling/logfmt/main.go
+dev-logs:
+	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace sales-system --max-log-requests=6
+
+dev-describe:
+	kubectl describe nodes
+	kubectl describe svc
+
+dev-describe-deployment:
+	kubectl describe deployment --namespace=sales-system sales
+
+dev-describe-sales:
+	kubectl describe pod --namespace=sales-system -l app=sales
 
 kind-update: all kind-load kind-restart
 
@@ -81,3 +97,7 @@ kind-argo-port-forward:
 
 tf-apply:
 	cd infrastructure/terraform && terraform apply
+
+dev-update: all dev-load dev-restart
+
+dev-update-apply: all dev-load dev-apply
