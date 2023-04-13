@@ -4,6 +4,23 @@ SHELL := /bin/bash
 # Testing running systems
 # expvarmon -ports=":4000" -vars="build,requests,goroutines,errors,panics,mem:memstats.Alloc"
 
+GOLANG       := golang:1.20
+ALPINE       := alpine:3.17
+KIND         := kindest/node:v1.25.3
+POSTGRES     := postgres:15-alpine
+VAULT        := hashicorp/vault:1.12
+ZIPKIN       := openzipkin/zipkin:2.23
+TELEPRESENCE := docker.io/datawire/tel2:2.10.4
+
+dev-docker:
+	docker pull $(GOLANG)
+	docker pull $(ALPINE)
+	docker pull $(KIND)
+	docker pull $(POSTGRES)
+	docker pull $(VAULT)
+	docker pull $(ZIPKIN)
+	docker pull $(TELEPRESENCE)
+
 setup:
 	brew install tilt
 	brew install kind
@@ -55,6 +72,7 @@ dev-up:
 # 	./scripts/kind-with-registry.sh $(KIND_CLUSTER)	
 
 dev-down:
+	telepresence quit -s
 	kind delete cluster --name $(KIND_CLUSTER)
 
 dev-load:
@@ -67,6 +85,7 @@ dev-status:
 	kubectl get pods -o wide --watch --all-namespaces
 
 dev-apply:
+	kustomize build infrastructure/k8s/base/sales | kubectl apply -f -
 	kustomize build infrastructure/k8s/dev/sales | kubectl apply -f -
 	kubectl wait --timeout=120s --namespace=sales-system --for=condition=Available deployment/sales
 
@@ -104,3 +123,11 @@ tf-apply:
 dev-update: all dev-load dev-restart
 
 dev-update-apply: all dev-load dev-apply
+
+metrics-view-local-sc:
+	expvarmon -ports="localhost:4000" -vars="build,requests,goroutines,errors,panics,mem:memstats.Alloc"
+
+dev-tel:
+	kind load docker-image $(TELEPRESENCE) --name $(KIND_CLUSTER)
+	telepresence --context=kind-$(KIND_CLUSTER) helm install
+	telepresence --context=kind-$(KIND_CLUSTER) connect

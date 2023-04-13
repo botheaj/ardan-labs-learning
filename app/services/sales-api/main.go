@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ardanlabs/conf/v3"
+	"github.com/botheaj/service4/business/web/v1/debug"
 	"github.com/botheaj/service4/foundation/logger"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
@@ -82,6 +84,18 @@ func run(log *zap.SugaredLogger) error {
 	if err != nil {
 		return fmt.Errorf("generating config for output: %w", err)
 	}
+
+	// =========================================================================
+	// Start Debug Service
+
+	log.Infow("startup", "status", "debug v1 router started", "host", cfg.Web.DebugHost)
+
+	go func() {
+		if err := http.ListenAndServe(cfg.Web.DebugHost, debug.StandardLibraryMux()); err != nil {
+			log.Errorw("shutdown", "status", "debug v1 router closed", "host", cfg.Web.DebugHost, "ERROR", err)
+		}
+	}()
+
 	log.Infow("startup", "config", out)
 
 	shutdown := make(chan os.Signal, 1)
